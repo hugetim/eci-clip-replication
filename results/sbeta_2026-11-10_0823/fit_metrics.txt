@@ -1,9 +1,9 @@
 epoch: Pareto k > 0.7 for 56 scores
-sbeta: Pareto k > 0.7 for 52 scores
+xb: Pareto k > 0.7 for 52 scores
 
 observed share < 0.1%: 0.0212; 2787 scores; 1000 posterior draws per fit
 
-                                 epoch              sbeta         
+                                 epoch                 xb         
                              in sample PSIS-LOO in sample PSIS-LOO
 RMSE                            0.0800   0.0925    0.0798   0.0928
 MAE                             0.0589   0.0681    0.0585   0.0679

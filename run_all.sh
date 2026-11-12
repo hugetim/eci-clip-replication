@@ -30,10 +30,10 @@ if [ "${FITS:-0}" = 1 ]; then
 fi
 
 echo "== model comparison (PSIS-LOO) and fit measures"
-python scripts/loo_compare.py $D 0.001 epoch=$CR/base sbeta=$XB --save=$XB/loo_pointwise_c0.001.csv > $XB/loo_compare.txt
-python scripts/fit_metrics.py $D epoch=$CR/base sbeta=$XB --seed 1 --csv $XB/fit_metrics.csv > $XB/fit_metrics.txt
-python scripts/loo_compare.py $D 0.001 sbeta=$XB shift=$XS --save=$XS/loo_pointwise_c0.001.csv > $XS/loo_compare.txt
-python scripts/fit_metrics.py $D epoch=$CR/base sbeta=$XB shift=$XS --seed 1 --csv $XS/fit_metrics.csv > /dev/null
+python scripts/loo_compare.py $D 0.001 epoch=$CR/base xb=$XB --save=$XB/loo_pointwise_c0.001.csv > $XB/loo_compare.txt
+python scripts/fit_metrics.py $D epoch=$CR/base xb=$XB --seed 1 --csv $XB/fit_metrics.csv > $XB/fit_metrics.txt
+python scripts/loo_compare.py $D 0.001 xb=$XB shift=$XS --save=$XS/loo_pointwise_c0.001.csv > $XS/loo_compare.txt
+python scripts/fit_metrics.py $D epoch=$CR/base xb=$XB shift=$XS --seed 1 --csv $XS/fit_metrics.csv > /dev/null
 python scripts/loo_compare.py $D 0.001 xb=$XB xbx=$XBX --save=$XBX/loo_pointwise_c0.001.csv > $XBX/loo_compare.txt
 
 echo "== XB prior sensitivity (the post's footnote on XBX: delta barely moves under tighter or flatter priors)"

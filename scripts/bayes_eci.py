@@ -50,9 +50,15 @@ def beta_logcdf_small(a, b, x, n_terms=60):
     PyTensor's own Beta logcdf (betainc) returns NaN gradients when a is small and b large, which is exactly where
     a weak model's censored zero sits (a = mu * kappa ~ 0.02), so every NUTS transition diverged. Instead, DLMF 8.17.8:
         I_x(a, b) = x^a (1 - x)^b / (a B(a, b)) * sum_n (a + b)_n / (a + 1)_n x^n,
-    whose terms are all positive (ratio (a + b + n - 1) x / (a + n)), summed in logs. Checked against
-    scipy.special.betainc (value to 1e-12, gradients to 1e-9) for a in [1e-4, 30], b up to 600, x = 1e-3, 1e-4.
-    Converges when (a + b) x < 1, which holds for x <= 1e-3 unless kappa exceeds ~1,000 (sigma_b < 0.016).
+    whose terms are all positive, summed in logs. Successive terms have ratio (a + b + n - 1) x / (a + n), which tends
+    to x, so the series converges for any x < 1; the terms first grow while (a + b) x > a + n, so the larger
+    (a + b) x is, the more terms are needed.
+
+    Accuracy against scipy.special.betainc, in logs, for mu = a / (a + b) up to 0.1 and kappa = a + b up to 1,000
+    (Epoch's fit has kappa up to ~770): better than 1e-11 with the default 60 terms at x <= 1e-3, and with 200 terms
+    (what sbeta_model passes) at x up to 0.084, the largest x its cap on delta allows. Gradients agree to 1e-9
+    (checked for a in [1e-4, 30], b up to 600, x = 1e-3 and 1e-4). At kappa = 2,000 and x = 0.084, 200 terms are no
+    longer enough (log error 0.1).
     """
     import pytensor.tensor as pt
     n = np.arange(1, n_terms + 1, dtype=float)
@@ -86,33 +92,36 @@ def init_from_fit(fit_dir, model):
 
 
 def sbeta_model(df, shift=False, delta_prior="halfnormal0.05", xbx_nodes=0):
-    """Censored stretched beta (Nov 8, 2026): Epoch's beta on a slightly wider interval, clamped to [0, 1]. This is the
-    extended-support beta, XB(mu, phi, u), of Kosmidis and Zeileis (2026, JRSS C 75: 139-157), with phi = kappa, u = delta.
+    """Epoch's model with the extended-support beta likelihood, XB(mu, phi, u), of Kosmidis and Zeileis (2026, JRSS C
+    75: 139-157), with phi = kappa and u = delta. (This code calls it "sbeta", for stretched beta: the name predates
+    the post's "XB".)
 
-    delta_prior (prior sensitivity): "halfnormal0.05" (the default below), "halfnormal0.01", "uniform"
-    (Uniform(0, 0.1)) or "loguniform" (density proportional to 1/delta on [1e-5, 0.1]); all within the 0.1 cap.
+    The model. A latent score y* = -delta + (1 + 2 delta) x, with x ~ Beta(mu kappa_b, (1 - mu) kappa_b) and
+    mu = sigmoid(slope_b (C_m - D_b)): Epoch's curve and beta (same clip on mu, same kappa_b = 1 / (4 sigma_b^2) - 1),
+    stretched to [-delta, 1 + delta]. The observed score is y = clamp(y*, 0, 1). So:
+      - interior scores keep Epoch's beta shape and spread;
+      - exact 0s and 1s get the probabilities P(x <= x0) and P(x >= 1 - x0), x0 = delta / (1 + 2 delta);
+      - the mean curve -delta + (1 + 2 delta) mu crosses 0 and 1 at finite capability.
+    Scores are used as they are (no clip on scores). Every prior and constraint other than delta's is Epoch's.
 
-    xbx_nodes > 0 (Nov 10): their XBX instead, a continuous mixture of XB over the exceedance u ~ Exponential(mean nu),
-    each score's likelihood f_XBX(y) = int_0^inf f_XB(y | u) e^(-u / nu) / nu du. Interior scores: Gauss-Laguerre
-    quadrature with xbx_nodes points (their eq. 9), sum_t W_t f_XB(y | u = nu Q_t). Exact 0s and 1s: there f_XB(y | u)
-    behaves like u^a near u = 0 with a = mu kappa as small as ~0.02, which Gauss-Laguerre handles poorly (error ~2e-3 per
-    score at 32 nodes), so they use the trapezoid rule in s = log(u / nu) instead, 32 points on [-14, 4]. Checked against
-    a 600-point reference at the XB fit's estimates, nu = 0.0013 to 0.011 (scratch check, Nov 10): total log-likelihood
-    error under 0.015 with 12 Laguerre nodes. nu takes delta's prior (nu is the mean exceedance). u is capped at 0.1 (the
-    series' accuracy limit), which only matters for nodes whose weight is negligible at any nu the data support.
+    delta_prior: "halfnormal0.05" (the default: HalfNormal(0.05)), "halfnormal0.01", "uniform" (Uniform(0, 0.1)) or
+    "loguniform" (density proportional to 1 / delta on [1e-5, 0.1]). All are capped at 0.1, which keeps x0 < 0.084,
+    where the series for the boundary probabilities is accurate (see beta_logcdf_small).
 
-    shift=True (Nov 10) ties the stretch to each benchmark's scatter: delta_b = delta (sigma_b / sigma_median)^gamma,
-    gamma estimated (prior Normal(0, 2)), so gamma > 0 gives widely scattered benchmarks more 0s and 100s than the
-    plain stretched beta (gamma = 0). One extra parameter. delta_b is capped at 0.1
-    (the series' accuracy limit below); the fit never comes near it.
+    shift=True ties the stretch to each benchmark's scatter: delta_b = delta (sigma_b / sigma_median)^gamma, with
+    gamma estimated (prior Normal(0, 2)). gamma > 0 gives widely scattered benchmarks more 0s and 100s than plain XB
+    (gamma = 0). One extra parameter. delta_b is capped at 0.1 too; the fit never comes near it.
 
-    Latent score y* = -delta + (1 + 2 delta) x, x ~ Beta(mu kappa_b, (1 - mu) kappa_b), mu = sigmoid(slope_b (C_m - D_b))
-    (Epoch's curve, clip on mu and kappa_b = 1 / (4 sigma_b^2) - 1), observed y = clamp(y*, 0, 1). So the mean curve
-    -delta + (1 + 2 delta) mu crosses 0 and 1 at finite capability, interior scores keep Epoch's beta shape and spread,
-    and exact 0s and 1s get the masses P(x <= x0) and P(x >= 1 - x0), x0 = delta / (1 + 2 delta). Scores are used as
-    they are (no clip on scores). Prior delta ~ HalfNormal(0.05) truncated at 0.1, which keeps x0 < 0.084, where the
-    beta-CDF series (beta_logcdf_small, 200 terms) is accurate to 1e-8 in logs for kappa up to 1,000 (checked against
-    scipy.special.betainc; Epoch's fit has kappa up to ~770). Every other prior and constraint is Epoch's.
+    xbx_nodes > 0 fits their XBX instead: a continuous mixture of XB over the exceedance u ~ Exponential(mean nu), so
+    each score's likelihood is f_XBX(y) = int_0^inf f_XB(y | u) e^(-u / nu) / nu du. nu takes delta's prior (it is
+    the mean exceedance). The integral is computed by quadrature:
+      - interior scores: Gauss-Laguerre with xbx_nodes points (their eq. 9), sum_t W_t f_XB(y | u = nu Q_t);
+      - exact 0s and 1s: the trapezoid rule in s = log(u / nu), 32 points on [-14, 4]. There f_XB(y | u) behaves like
+        u^a near u = 0, with a = mu kappa as small as ~0.02, which Gauss-Laguerre handles poorly (error ~2e-3 per
+        score at 32 nodes).
+    Against a 600-point reference at the XB fit's estimates, nu = 0.0013 to 0.011, the total log-likelihood error is
+    under 0.015 with 12 Laguerre nodes. u is capped at 0.1, which only matters for nodes whose weight is negligible
+    at any nu the data support.
     """
     import pymc as pm
     import pytensor.tensor as pt

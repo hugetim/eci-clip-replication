@@ -50,7 +50,9 @@ To refit everything from scratch instead, run `bash setup.sh` without `--draws`,
 
 The fits use Epoch's own model code. `scripts/bayes_eci.py` builds the model with `eci.bayesian` from [epoch-research/eci-public](https://github.com/epoch-research/eci-public) at commit `e04929a`, then adds the alternative likelihoods (XB and XBX), and samples it with nutpie. The least-squares fits use `fit.py` from [epoch-research/benchmark-stitching](https://github.com/epoch-research/benchmark-stitching) at commit `f87d3cc`.
 
-Throughout the code and results, XB is called "sbeta" ("stretched beta"), because the scripts predate the post's naming.
+On the fitting side, XB is called "sbeta" ("stretched beta"): the `--sbeta` flags of `scripts/bayes_eci.py`, the `results/sbeta*` folders and the `sbeta` keys in `diagnostics.json` predate the post's naming. The comparison outputs and post files call it `xb`.
+
+The reasoning-era trend behind Fable 5.2's gap is defined once, in `scripts/trend.py`.
 
 ## Credits and license
 
