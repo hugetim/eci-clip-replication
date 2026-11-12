@@ -1,0 +1,61 @@
+benchmark,n_questions,ill_defined,source_url,notes,n_used
+LAMBADA,5153.0,no,https://www.tensorflow.org/datasets/catalog/lambada,Test split (EleutherAI harness default). Split used by the Qwen report rows unconfirmed.,5153.0
+TriviaQA,7993.0,no,https://huggingface.co/datasets/mandarjoshi/trivia_qa,"LOW CONFIDENCE: rc.wikipedia validation assumed from Meta's eval notes; other sources don't state the split. Alternatives 7,701 / 11,313 / 18,669.",7993.0
+ARC AI2,1172.0,no,https://huggingface.co/datasets/allenai/ai2_arc,ARC-Challenge test.,1172.0
+OpenBookQA,500.0,no,https://huggingface.co/datasets/allenai/openbookqa,Test split (validation is also 500).,500.0
+HellaSwag,10042.0,no,https://www.tensorflow.org/datasets/catalog/hellaswag,Validation split.,10042.0
+Winogrande,1267.0,no,https://huggingface.co/datasets/allenai/winogrande,Validation split.,1267.0
+ANLI,,unsourced,https://huggingface.co/datasets/facebook/anli,"UNSOURCED: all 9 rows are from the Phi-3 report, which gives no round or split. Test sizes: R1 1,000, R2 1,000, R3 1,200 (3,200 if all). Median used until Tim decides.",232.5
+PIQA,1838.0,no,https://www.tensorflow.org/datasets/catalog/piqa,Validation split.,1838.0
+MMLU,14042.0,no,https://huggingface.co/datasets/cais/mmlu,"Test split, 57 subjects.",14042.0
+MATH level 5,1324.0,no,https://epoch.ai/benchmarks/math-level-5,"Level-5 problems of the MATH test set; Epoch-run, 1-4 epochs per question.",1324.0
+GSM8K,1319.0,no,https://huggingface.co/datasets/openai/gsm8k,"Test split; the 11 HELM-classic rows may use a 1,000-instance subsample.",1319.0
+ScienceQA,4241.0,no,https://scienceqa.github.io/leaderboard.html,"Test split; the 2 Phi-3 rows use the image-only subset (about 2,017).",4241.0
+BBH,6511.0,no,https://github.com/suzgunmirac/BIG-Bench-Hard,27 tasks: 24 x 250 + 187 + 146 + 178; score is an average over tasks.,6511.0
+GPQA diamond,198.0,no,https://epoch.ai/benchmarks/gpqa-diamond,"Epoch-run, usually 8 epochs per question.",198.0
+OSWorld,369.0,borderline,https://github.com/xlang-ai/OSWorld/blob/main/evaluation_examples/test_all.json,369 tasks (361 without Google Drive); a few evaluators give fractional scores. Count used.,369.0
+SWE-Bench verified,484.0,no,https://epoch.ai/benchmarks/swe-bench-verified,Epoch runs 484 of the 500 (16 excluded for infrastructure reasons).,484.0
+Cybench,40.0,no,https://cybench.github.io/,40 CTF tasks; some system-card rows use 37 or 39.,40.0
+Aider polyglot,225.0,no,https://aider.chat/docs/leaderboards/,225 Exercism exercises.,225.0
+The Agent Company,175.0,no,https://github.com/TheAgentCompany/TheAgentCompany/blob/main/docs/EVALUATION.md,"ECI uses % Resolved (binary), not the checkpoint score.",175.0
+Terminal Bench,89.0,no,https://arxiv.org/abs/2601.11868,Terminal-Bench 2.0; typically 5 trials per task.,89.0
+SimpleQA Verified,1000.0,no,https://epoch.ai/benchmarks/simpleqa-verified,"Epoch-run on all 1,000.",1000.0
+HLE,2500.0,no,https://epoch.ai/benchmarks/hle,Full set; one row appears to use the text-only subset.,2500.0
+OTIS Mock AIME 2024-2025,45.0,no,https://epoch.ai/benchmarks/otis-mock-aime-2024-2025,3 exams of 15; up to 8 epochs per question.,45.0
+FrontierMath-2025-02-28-Private,290.0,no,https://epoch.ai/benchmarks/frontiermath-tiers-1-3-v1,300 minus 10 public.,290.0
+FrontierMath-Tier-4-2025-07-01-Private,48.0,no,https://epoch.ai/benchmarks/frontiermath-tier-4-v1,50 minus 2 public.,48.0
+FrontierMath-Tiers-1-3-v2-Private,285.0,no,https://epoch.ai/benchmarks/frontiermath-tiers-1-3-v2,295 minus 10 public.,285.0
+FrontierMath-Tier-4-v2-Private,41.0,no,https://epoch.ai/benchmarks/frontiermath-tier-4-v2,43 minus 2 public.,41.0
+ARC-AGI,100.0,borderline,https://arcprize.org/arc-agi/1/,"Semi-private set, 100 tasks; a task is scored as the fraction of its test outputs solved (near-binary). Count used.",100.0
+ARC-AGI-2,120.0,borderline,https://epoch.ai/benchmarks/arc-agi-2,"Semi-private set, 120 tasks; same near-binary scoring. Count used.",120.0
+SimpleBench,213.0,no,https://epoch.ai/benchmarks/simplebench,"213 questions, 5 runs each.",213.0
+Balrog,6.0,yes,https://epoch.ai/benchmarks/balrog,Mean progression over 6 game environments (54-58 task configs). Median used.,232.5
+WeirdML,17.0,yes,https://epoch.ai/benchmarks/weirdml/review,Mean test accuracy over 17 ML tasks. Median used.,232.5
+VPCT,100.0,no,https://epoch.ai/benchmarks/vpct,100 problems.,100.0
+Lech Mazur Writing,500.0,yes,https://github.com/lechmazur/writing,500 story prompts graded 0-10 by LLM judges on a rubric. Median used.,232.5
+Fiction.LiveBench,36.0,no,https://epoch.ai/benchmarks/fictionlivebench,36 questions about 30 stories; ECI uses the 16k-token column.,36.0
+GeoBench,100.0,no,https://epoch.ai/benchmarks/geobench,Correct-country fraction on about 100 images (some models as few as 20).,100.0
+METR Time Horizons,228.0,yes,https://metr.org/blog/2026-1-29-time-horizon-1-1/,228 tasks (170 in the earlier suite); ECI uses a weighted mean success rate. Median used.,232.5
+CadEval,25.0,no,https://github.com/wgpatrick/cadeval,"25 tasks, 2 replicates each.",25.0
+GSO-Bench,102.0,no,https://gso-bench.github.io/,102 tasks.,102.0
+DeepResearch Bench,169.0,yes,https://evals.futuresearch.ai/,"CONFLICT: 169 tasks on the live leaderboard, 89 in the paper, 91 on Epoch's page; mixed precision/recall/F1/binary scoring. Median used.",232.5
+GDPval,220.0,yes,https://arxiv.org/abs/2510.04374,220-task gold subset; score is a human pairwise win rate (9 comparisons per task). Median used.,232.5
+Remote Labor Index,240.0,no,https://epoch.ai/benchmarks/rli,CONFLICT: paper and leaderboard say 230 private projects; published scores are exact multiples of 1/240.,240.0
+Chess Puzzles,100.0,no,https://epoch.ai/benchmarks/chess-puzzles,100 positions.,100.0
+APEX-Agents,240.0,no,https://www.mercor.com/apex/apex-agents-leaderboard/,v1.1 leaderboard: 240 tasks (v1.0 had 480); Pass@1 is binary per task.,240.0
+ProofBench,100.0,no,https://www.vals.ai/benchmarks/proof_bench,"Private split, 100 problems.",100.0
+CL-bench,1899.0,no,https://epoch.ai/benchmarks/cl-bench,"1,899 tasks in 500 contexts; a task is solved only if all rubrics pass.",1899.0
+PostTrainBench,28.0,yes,https://posttrainbench.com/,7 target benchmarks x 4 base models; score is a weighted average of post-trained model performance. Median used.,232.5
+CL-bench Life,405.0,no,https://epoch.ai/benchmarks/cl-bench-life,405 context-task pairs.,405.0
+ExploitBench,41.0,yes,https://epoch.ai/benchmarks/exploitbench,41 bugs; score is the average fraction of 16 graded flags per bug. Median used.,232.5
+DeepSWE,113.0,no,https://deepswe.datacurve.ai/,"113 tasks, 4 runs each.",113.0
+FrontierCode,100.0,yes,https://cognition.com/blog/frontier-code-1.1,Main subset (100 of 150); weighted maintainer rubric. Median used.,232.5
+Surface Evolver Bench,16.0,yes,https://epoch.ai/benchmarks/surface-evolver-bench,16 tasks with partial credit. Median used.,232.5
+OSWorld 2.0,108.0,no,https://osworld-v2.xlang.ai/,108 tasks; Epoch uses binary accuracy.,108.0
+MirrorCode,30.0,no,https://epoch.ai/benchmarks/mirrorcode,"15 programs x 2 languages; binary per task, but the 15 programs are the independent units.",30.0
+EBR-bench,21.0,yes,https://epoch.ai/benchmarks/ebr-bench,21 objectives within one game; not independent items. Median used.,232.5
+Mystery Game Puzzles,100.0,no,https://epoch.ai/benchmarks/mystery-game-puzzles,100 positions.,100.0
+LMCA,1461.0,yes,https://epoch.ai/benchmarks/lmca,"1,461 arguments; score is a correlation with expert ratings. Median used.",232.5
+DTBench,407.0,no,https://epoch.ai/benchmarks/dtbench,CONFLICT: Epoch says 407 capability questions; published accuracies are mostly exact multiples of 1/375.,407.0
+FrontierSWE,34.0,yes,https://www.frontierswe.com/,34 tasks scored continuously 0-100%. Median used.,232.5
+Furniture Assembly,60.0,no,https://epoch.ai/benchmarks/furniture-assembly,"60 photos, 2 epochs each.",60.0

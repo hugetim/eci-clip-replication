@@ -1,0 +1,8 @@
+evaluation threshold c* = 0.001: 59 bottom, 20 top, 2708 interior
+103 points have Pareto k > 0.7 in at least one fit (1 at the boundary); 'reliable' columns drop them for every fit
+
+elpd_loo and differences from sbeta:
+         elpd  boundary  interior  diff  diff_se  diff_boundary  diff_interior  diff_reliable  diff_reliable_se
+fit                                                                                                            
+sbeta  2943.9     -89.9    3033.9   0.0      0.0            0.0            0.0            0.0               0.0
+shift  2958.4     -80.7    3039.0  14.4      4.5            9.2            5.2           15.1               3.6
