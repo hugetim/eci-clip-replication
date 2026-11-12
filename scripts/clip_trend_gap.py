@@ -5,21 +5,23 @@ published" row checks that this reproduces Epoch's chart.
 
 Per source: the trend's slope; its prediction at Fable 5.2's release date; gap = ECI - prediction; gap_lo/gap_hi:
 5th/95th percentiles of the gap over draws (Epoch's 500 bootstrap refits for the published ECI, posterior draws for
-the refits), with the trend refit in each draw and frontier membership held fixed.
+the refits), with the trend refit in each draw and frontier membership held fixed; pi_lo/pi_hi: the trend's 90%
+prediction interval at that date, relative to the prediction (see prediction_band).
 Usage: python scripts/clip_trend_gap.py ECI_DIR FIT_ROOT OUT_CSV [LINES_CSV]
   ECI_DIR: an archive's epoch_capabilities_index/ (eci_scores.csv, eci_bootstraps.json)
   FIT_ROOT: results/clip_refits_<stamp> (one folder per fit, each with draws.npz); a sibling sbeta_<stamp> (XB) is
   picked up if present.
-  LINES_CSV (optional): each source's trend line and classic OLS 90% prediction band half-width on a 5-day grid (Mar 1
-  to Dec 20, 2026), as days from Fable 5.2's release and ECI relative to that source's own prediction there (for the
-  clip post's figure, posts/eci-clip/fable_gap_lines.csv).
+  LINES_CSV (optional): each source's trend line and 90% prediction band on a 5-day grid (Mar 1 to Dec 20, 2026), as
+  days from Fable 5.2's release and ECI relative to that source's own prediction there; the band's edges lo and hi
+  are relative to the line (for the clip post's figure, posts/eci-clip/fable_gap_lines.csv).
 """
 import json
 import sys
 from pathlib import Path
 import numpy as np
 import pandas as pd
-from scipy import stats
+from scipy.optimize import brentq
+from scipy.stats import norm
 import trend
 from trend import FABLE
 
@@ -33,13 +35,28 @@ published = pd.read_csv(ECI_DIR / "eci_scores.csv", parse_dates=["date"]).set_in
 dates = published.date
 
 
-def prediction_band(eci, models, line, when):
-    """Half-width of the classic 90% prediction interval of the least-squares line through `models`, at each date."""
-    X, n = trend.design(dates[models]), len(models)
-    residual_sd = np.sqrt(((eci[models].values - X @ line) ** 2).sum() / (n - 2))
-    Xw = trend.design(when)
-    leverage = np.einsum("ij,jk,ik->i", Xw, np.linalg.inv(X.T @ X), Xw)
-    return stats.t.ppf(0.95, n - 2) * residual_sd * np.sqrt(1 + leverage)
+def prediction_band(draws, models, line, when):
+    """The trend's 90% prediction interval at each date, as (lower, upper) distances from `line`: Epoch's ribbon.
+
+    Each draw (a bootstrap refit or a posterior draw of every model's ECI) gives its own least-squares line through
+    `models` and its own residual standard deviation around that line. A new frontier model's ECI is predicted, per
+    draw, as that draw's line plus normal noise with that draw's standard deviation; the interval runs from the 5th to
+    the 95th percentile of the resulting mixture over draws. So it reflects both the uncertainty in the models' ECIs
+    and the scatter of frontier models around the trend. Epoch does not document its ribbon; on Epoch's published
+    ECI and bootstraps, this matches the ribbon in its Nov 9, 2026 chart to about 0.1 ECI on both edges. (The
+    classic OLS prediction interval from the point estimates alone is much narrower, about +-2.4 against -3.9/+4.2
+    at Fable 5.2's release.)"""
+    X = trend.design(dates[models])
+    draw_lines = trend.fit_line(draws, models, dates)
+    residuals = draws[models].values - (X @ draw_lines).T                      # draws x models
+    residual_sd = np.sqrt((residuals ** 2).sum(1) / (len(models) - 2))        # one per draw
+    offsets = trend.predict(draw_lines, when) - trend.predict(line, when)[:, None]  # dates x draws
+
+    def quantile(p, offset):
+        return brentq(lambda v: norm.cdf((v - offset) / residual_sd).mean() - p, -100, 100)
+
+    return (np.array([quantile(0.05, offset) for offset in offsets]),
+            np.array([quantile(0.95, offset) for offset in offsets]))
 
 
 def analyse(source, eci, draws):
@@ -49,12 +66,14 @@ def analyse(source, eci, draws):
     line = trend.fit_line(eci, models, dates)
     prediction = trend.predict(line, [dates[FABLE]])[0]
     gap_draws = trend.gap_above_trend(draws, trend.fit_line(draws, models, dates), dates)
+    pi_lo, pi_hi = prediction_band(draws, models, line, [dates[FABLE]])
     row = {"source": source, "slope": line[1], "5.2_eci": eci[FABLE], "5.2_pred": prediction,
            "5.2_gap": eci[FABLE] - prediction,
-           "5.2_gap_lo": np.percentile(gap_draws, 5), "5.2_gap_hi": np.percentile(gap_draws, 95)}
+           "5.2_gap_lo": np.percentile(gap_draws, 5), "5.2_gap_hi": np.percentile(gap_draws, 95),
+           "5.2_pi_lo": pi_lo[0], "5.2_pi_hi": pi_hi[0]}
+    band_lo, band_hi = prediction_band(draws, models, line, GRID)
     on_grid = pd.DataFrame({"source": source, "days": (GRID - dates[FABLE]).days,
-                            "y": trend.predict(line, GRID) - prediction,
-                            "half": prediction_band(eci, models, line, GRID)})
+                            "y": trend.predict(line, GRID) - prediction, "lo": band_lo, "hi": band_hi})
     return row, on_grid, models
 
 
