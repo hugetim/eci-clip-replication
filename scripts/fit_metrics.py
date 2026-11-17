@@ -3,7 +3,7 @@ Appendix B "Quality of fit"), computed in sample and by PSIS-LOO for one or more
 
 Usage: python3 scripts/fit_metrics.py ARCHIVE_EPOCH_DIR LABEL=FIT_DIR [LABEL=FIT_DIR ...] [--draws 1000] [--seed 1] [--csv OUT]
 
-Fits: Epoch's clipped beta (any clip) and the extended-support beta, XB (bayes_eci.py --sbeta, --sbeta-shift). Every
+Fits: Epoch's clipped beta (any clip) and the extended-support beta, XB (bayes_eci.py --sbeta). Every
 fit is judged against the observed scores as they are (exact 0s and 1s included). Posterior predictive draws:
   clipped beta: X ~ Beta(mu kappa, (1 - mu) kappa), read through the fit's own clip (X <= c -> 0, X >= 1 - c -> 1),
     the same convention as scripts/loo_compare.py at c* = c, so exact 0s and 1s can be covered;
@@ -80,9 +80,6 @@ def predictive(fit):
     x = rng.beta(a, b)
     if diag.get("sbeta"):  # XB: the beta stretched to [-delta, 1 + delta], then clamped to [0, 1]
         delta = dr["hyper_delta"][keep].astype(float)[:, None]
-        if diag.get("sbeta_shift"):  # delta_b = delta (sigma_b / sigma_median)^gamma, capped at 0.1
-            gamma, sigma_median = (dr[k][keep].astype(float)[:, None] for k in ("hyper_gamma", "hyper_sigma_median"))
-            delta = np.minimum(delta * (sigma[:, bench_idx] / sigma_median) ** gamma, 0.1)
         on_beta_scale = lambda score: (score + delta) / (1 + 2 * delta)  # where a score sits on the beta's own [0, 1]
         lo, hi = on_beta_scale(0.0), on_beta_scale(1.0)
         rep = np.clip(-delta + (1 + 2 * delta) * x, 0, 1)

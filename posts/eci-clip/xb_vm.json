@@ -13,8 +13,5 @@
  "bsrmse_epoch": 0.10935769129522127,
  "bsrmse_xb": 0.11360250901727101,
  "bsrmse_vm": 0.11025207571193456,
- "ppp_var_epoch": 0.567,
- "ppp_var_xb": 0.827,
- "ppp_var_vm": 0.981,
  "fable_eci": 172.947646562531
 }

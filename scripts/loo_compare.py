@@ -1,7 +1,7 @@
 """PSIS-LOO comparison of ECI fits that handle 0% and 100% scores differently, on one common outcome space.
 
 Usage: python3 scripts/loo_compare.py ARCHIVE_EPOCH_DIR EVAL_C LABEL=FIT_DIR [LABEL=FIT_DIR ...]
-Fits are scripts/bayes_eci.py outputs: Epoch's clipped beta (any clip), XB (--sbeta, --sbeta-shift) or XBX (--xbx).
+Fits are scripts/bayes_eci.py outputs: Epoch's clipped beta (any clip), XB (--sbeta, optionally with --median-centre --var-match) or XBX (--xbx).
 The first fit is the reference. --save=CSV also writes each score's elpd under every fit.
 
 Every fit is scored on the same outcomes, set by EVAL_C (c*): a score <= c* is the event "bottom", a score >= 1 - c*
@@ -55,9 +55,6 @@ def pointwise(fit):
         return ll.reshape(4, -1, len(y))
     if diag.get("sbeta"):  # censored stretched beta (bayes_eci.sbeta_model): Epoch's beta on [-delta, 1 + delta], clamped
         dl = dr["hyper_delta"][idx].astype(float)[:, None]
-        if diag.get("sbeta_shift"):  # delta_b = delta (sigma_b / sigma_median)^gamma, capped at 0.1
-            g, sm = (dr[k][idx].astype(float)[:, None] for k in ("hyper_gamma", "hyper_sigma_median"))
-            dl = np.minimum(dl * (sig / sm) ** g, 0.1)
         tr = lambda v: (v + dl) / (1 + 2 * dl)
         ll = np.where(cat == 0, B.logcdf(tr(c_eval), a, b), np.where(cat == 2, B.logsf(tr(1 - c_eval), a, b),
                      B.logpdf(tr(y), a, b) - np.log1p(2 * dl)))

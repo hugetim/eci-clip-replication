@@ -1,5 +1,6 @@
 """Data for the clip post (posts/eci-clip/index.qmd): the clip refits and XB. (Fable 5.2's trend gap is in
-scripts/clip_trend_gap.py, XB with delta tied to sigma_b in xb_shift_post_assets.py, XBX in xbx_post_assets.py.)
+scripts/clip_trend_gap.py, XBX in xbx_post_assets.py, the median-centred variance-matched XB in
+xb_median_vm_post_assets.py.)
 
 Usage: python scripts/clip_post_assets.py ECI_DIR CLIP_REFITS_DIR XB_FIT OUT_DIR QUESTION_COUNTS_CSV [DATA_DATE]
   CLIP_REFITS_DIR: scripts/bayes_eci.py fits of Epoch's model at several clips: base (0.1%), clip_0.01, clip_0.0001, ...

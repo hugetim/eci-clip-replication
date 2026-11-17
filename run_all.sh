@@ -8,7 +8,6 @@ S=2026-11-10_0823
 D=data/$S/epoch_capabilities_index
 CR=results/clip_refits_$S          # Epoch's model at each clip (base = Epoch's 0.1%)
 XB=results/sbeta_$S                # extended-support beta (XB; the fit-side name "sbeta" predates "XB")
-XS=results/sbeta_shift_$S          # XB with delta tied to sigma_b
 VM=results/xb_median_vm_$S         # XB, median-centred, with variance-matched capability noise (the last footnote)
 XBX=results/xbx_$S                 # Kosmidis and Zeileis's XBX
 XP=results/xb_prior_$S             # XB under other priors on delta
@@ -24,7 +23,6 @@ if [ "${FITS:-0}" = 1 ]; then
   fit $CR/base --clip 0.001 --tune 1500 --draws 2000 --seed 20261105
   fit $CR/clip_1e-10 --clip 1e-10 --tune 1500 --draws 2000 --seed 20261105
   fit $XB --sbeta
-  fit $XS --sbeta-shift --tune 1500 --draws 2000
   fit $VM --sbeta --median-centre --var-match --tune 1500 --draws 2000 --init-from $XB --init-set tau_cap=0.19
   fit $XBX --xbx 12 --init-from $XB
   for p in halfnormal0.01 uniform loguniform; do fit $XP/$p --sbeta --delta-prior $p; done
@@ -34,8 +32,6 @@ fi
 echo "== model comparison (PSIS-LOO) and fit measures"
 python scripts/loo_compare.py $D 0.001 epoch=$CR/base xb=$XB --save=$XB/loo_pointwise_c0.001.csv > $XB/loo_compare.txt
 python scripts/fit_metrics.py $D epoch=$CR/base xb=$XB --seed 1 --csv $XB/fit_metrics.csv > $XB/fit_metrics.txt
-python scripts/loo_compare.py $D 0.001 xb=$XB shift=$XS --save=$XS/loo_pointwise_c0.001.csv > $XS/loo_compare.txt
-python scripts/fit_metrics.py $D epoch=$CR/base xb=$XB shift=$XS --seed 1 --csv $XS/fit_metrics.csv > /dev/null
 python scripts/loo_compare.py $D 0.001 xb=$XB xbx=$XBX --save=$XBX/loo_pointwise_c0.001.csv > $XBX/loo_compare.txt
 python scripts/loo_compare.py $D 0.001 epoch=$CR/base xb=$XB vm=$VM --save=$VM/loo_pointwise_c0.001.csv > $VM/loo_compare.txt
 python scripts/fit_metrics.py $D epoch=$CR/base xb=$XB vm=$VM --seed 1 --csv $VM/fit_metrics.csv > $VM/fit_metrics.txt
@@ -46,7 +42,6 @@ python scripts/xb_sensitivity.py $D $XP/prior_sensitivity.csv "HalfNormal(0.05) 
 
 echo "== post files"
 python scripts/clip_post_assets.py $D $CR $XB $P binom/benchmark_question_counts.csv 2026-11-10
-python scripts/xb_shift_post_assets.py                             # xb_shift.json
 python scripts/xb_median_vm_post_assets.py                         # xb_vm.json
 python scripts/xbx_post_assets.py $D                               # xbx.json
 python scripts/clip_trend_gap.py $D $CR $P/fable_gap.csv $P/fable_gap_lines.csv

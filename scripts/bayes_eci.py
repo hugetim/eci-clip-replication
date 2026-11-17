@@ -85,13 +85,13 @@ def init_from_fit(fit_dir, model):
     lsl = np.log(dr["slope"].astype(float) * b).mean(0)[bi]
     init = {"capability": cap, "difficulty": dif - dif.mean(), "log_slope": lsl - lsl.mean(),
             "sigma": dr["sigma"].astype(float).mean(0)[bi]}
-    for k in ("tau_alpha", "sigma_median", "tau_sigma", "gamma", "delta", "nu", "tau_cap"):
+    for k in ("tau_alpha", "sigma_median", "tau_sigma", "delta", "nu", "tau_cap"):
         if "hyper_" + k in dr.files and k in model.named_vars:
             init[k] = float(np.median(dr["hyper_" + k]))
     return init
 
 
-def sbeta_model(df, shift=False, delta_prior="halfnormal0.05", xbx_nodes=0, median_centre=False, var_match=False):
+def sbeta_model(df, delta_prior="halfnormal0.05", xbx_nodes=0, median_centre=False, var_match=False):
     """Epoch's model with the extended-support beta likelihood, XB(mu, phi, u), of Kosmidis and Zeileis (2026, JRSS C
     75: 139-157), with phi = kappa and u = delta. (This code calls it "sbeta", for stretched beta: the name predates
     the post's "XB".)
@@ -107,10 +107,6 @@ def sbeta_model(df, shift=False, delta_prior="halfnormal0.05", xbx_nodes=0, medi
     delta_prior: "halfnormal0.05" (the default: HalfNormal(0.05)), "halfnormal0.01", "uniform" (Uniform(0, 0.1)) or
     "loguniform" (density proportional to 1 / delta on [1e-5, 0.1]). All are capped at 0.1, which keeps x0 < 0.084,
     where the series for the boundary probabilities is accurate (see beta_logcdf_small).
-
-    shift=True ties the stretch to each benchmark's scatter: delta_b = delta (sigma_b / sigma_median)^gamma, with
-    gamma estimated (prior Normal(0, 2)). gamma > 0 gives widely scattered benchmarks more 0s and 100s than plain XB
-    (gamma = 0). One extra parameter. delta_b is capped at 0.1 too; the fit never comes near it.
 
     xbx_nodes > 0 fits their XBX instead: a continuous mixture of XB over the exceedance u ~ Exponential(mean nu), so
     each score's likelihood is f_XBX(y) = int_0^inf f_XB(y | u) e^(-u / nu) / nu du. nu takes delta's prior (it is
@@ -173,7 +169,6 @@ def sbeta_model(df, shift=False, delta_prior="halfnormal0.05", xbx_nodes=0, medi
             a = herm_a(mu, kappa, xp=pt); b = kappa - a
         lo, hi = cat == 0, cat == 2
         if xbx_nodes:  # XBX: mixture over u = nu Q_t, log-sum-exp over the quadrature nodes
-            assert not shift
             Q, W = np.polynomial.laguerre.laggauss(xbx_nodes)
             parts = []
             for q, w in zip(Q, W):  # interior scores: Gauss-Laguerre
@@ -193,18 +188,13 @@ def sbeta_model(df, shift=False, delta_prior="halfnormal0.05", xbx_nodes=0, medi
             print(f"XBX ({xbx_nodes} Gauss-Laguerre nodes, nu prior {delta_prior}): {int(lo.sum())} scores at 0, "
                   f"{int(hi.sum())} at 1, {int(inner.sum())} interior", flush=True)
             return model
-        if shift:  # one delta per score, from its benchmark's sigma_b
-            gamma = pm.Normal("gamma", 0.0, 2.0)
-            d_all = pt.minimum(delta * pt.exp(gamma * pt.log(sigma[bench_idx] / sigma_median)), 0.1)
-            d_in, d_lo, d_hi = d_all[inner], d_all[lo], d_all[hi]
-        else:
-            d_in = d_lo = d_hi = delta
+        d_in = d_lo = d_hi = delta
         x_in = (y[inner] + d_in) / (1 + 2 * d_in)
         lp_in = pm.logp(pm.Beta.dist(a[inner], b[inner]), x_in) - pt.log1p(2 * d_in)
         lp_lo = beta_logcdf_small(a[lo], b[lo], d_lo / (1 + 2 * d_lo), n_terms=200)
         lp_hi = beta_logcdf_small(b[hi], a[hi], d_hi / (1 + 2 * d_hi), n_terms=200)   # P(x >= 1 - x0) for Beta(a, b) = P(x' <= x0), Beta(b, a)
         pm.Potential("sbeta", lp_in.sum() + lp_lo.sum() + lp_hi.sum())
-    print(f"censored stretched beta (XB){' (stretch shifted by sigma_b)' if shift else ''}, delta prior {delta_prior}: {int(lo.sum())} scores at 0, {int(hi.sum())} at 1, {int(inner.sum())} interior", flush=True)
+    print(f"censored stretched beta (XB), delta prior {delta_prior}: {int(lo.sum())} scores at 0, {int(hi.sum())} at 1, {int(inner.sum())} interior", flush=True)
     return model
 
 
@@ -223,8 +213,6 @@ def main():
                     help="clip scores to [clip, 1 - clip] (Epoch's performance_clip_eps; default 0.001)")
     ap.add_argument("--sbeta", action="store_true",
                     help="extended-support beta (XB): Epoch's beta on [-delta, 1 + delta], clamped to [0, 1] (see sbeta_model)")
-    ap.add_argument("--sbeta-shift", action="store_true",
-                    help="XB with each benchmark's delta (sigma_b / sigma_median)^gamma, gamma estimated")
     ap.add_argument("--delta-prior", default="halfnormal0.05",
                     choices=["halfnormal0.05", "halfnormal0.01", "uniform", "loguniform"],
                     help="with --sbeta or --xbx: prior on delta (or nu), see sbeta_model")
@@ -249,14 +237,12 @@ def main():
     if args.xbx:
         model = sbeta_model(df, delta_prior=args.delta_prior, xbx_nodes=args.xbx)
         DIAG_VARS.append("nu"); HYPER.append("nu")
-    elif args.sbeta or args.sbeta_shift:
-        model = sbeta_model(df, shift=args.sbeta_shift, delta_prior=args.delta_prior, median_centre=args.median_centre,
+    elif args.sbeta:
+        model = sbeta_model(df, delta_prior=args.delta_prior, median_centre=args.median_centre,
                             var_match=args.var_match)
         DIAG_VARS.append("delta"); HYPER.append("delta")
         if args.var_match:
             DIAG_VARS.append("tau_cap"); HYPER.append("tau_cap")
-        if args.sbeta_shift:
-            DIAG_VARS.append("gamma"); HYPER.append("gamma")
     else:
         model = build_bayesian_model(df, performance_clip_eps=args.clip)
     models = list(model.coords["model"])
@@ -292,7 +278,7 @@ def main():
                 compile_s=round(t1 - t0, 1), sample_s=round(t2 - t1, 1),
                 n_scores=len(df), n_models=len(models), n_benchmarks=len(benches),
                 processed_sha256=hashlib.sha256(src.read_bytes()).hexdigest(),
-                clip=args.clip, sbeta=args.sbeta or args.sbeta_shift, sbeta_shift=args.sbeta_shift, delta_prior=args.delta_prior, xbx_nodes=args.xbx,
+                clip=args.clip, sbeta=args.sbeta, delta_prior=args.delta_prior, xbx_nodes=args.xbx,
                 median_centre=args.median_centre, var_match=args.var_match,
                 eci_public_commit=ECI_PUBLIC_COMMIT, fitted_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
     diag["passes_epoch_checks"] = bool(div == 0 and diag["min_ess_bulk"] >= MIN_ESS

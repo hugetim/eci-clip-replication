@@ -30,7 +30,6 @@ out = dict(
     loo_boundary_xb=float(gain_xb[at_boundary].sum()), loo_interior_xb=float(gain_xb[~at_boundary].sum()),
     loo_diff_epoch=float(gain_epoch.sum()), loo_se_epoch=se(gain_epoch),
     **{f"bsrmse_{f}": float(metrics.loc["beta-scaled RMSE", f"{f}|PSIS-LOO"]) for f in FITS},
-    **{f"ppp_var_{f}": float(metrics.loc["PPP variance", f"{f}|in sample"]) for f in FITS},
     fable_eci=float(pd.read_csv(f"{FIT}/eci.csv").set_index("Model").eci["Claude Fable 5.2"]),
 )
 json.dump(out, open("posts/eci-clip/xb_vm.json", "w"), indent=1)
