@@ -9,8 +9,8 @@ the refits), with the trend refit in each draw and frontier membership held fixe
 prediction interval at that date, relative to the prediction (see prediction_band).
 Usage: python scripts/clip_trend_gap.py ECI_DIR FIT_ROOT OUT_CSV [LINES_CSV]
   ECI_DIR: an archive's epoch_capabilities_index/ (eci_scores.csv, eci_bootstraps.json)
-  FIT_ROOT: results/clip_refits_<stamp> (one folder per fit, each with draws.npz); a sibling sbeta_<stamp> (XB) is
-  picked up if present.
+  FIT_ROOT: results/clip_refits_<stamp> (one folder per fit, each with draws.npz); siblings sbeta_<stamp> (XB) and
+  xb_median_vm_<stamp> (XB+) are picked up if present.
   LINES_CSV (optional): each source's trend line and 90% prediction band on a 5-day grid (Mar 1 to Dec 20, 2026), as
   days from Fable 5.2's release and ECI relative to that source's own prediction there; the band's edges lo and hi
   are relative to the line (for the clip post's figure, posts/eci-clip/fable_gap_lines.csv).
@@ -29,7 +29,7 @@ ECI_DIR, FIT_ROOT, OUT = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3]
 LINES = sys.argv[4] if len(sys.argv) > 4 else None
 GRID = pd.date_range("2026-03-01", "2026-12-20", freq="5D")
 ROW_ORDER = ["Epoch published", "clip_0.01", "base", "clip_0.0001", "clip_1e-05", "clip_1e-06", "clip_1e-08",
-             "clip_1e-10", "clip_1e-12", "XB"]
+             "clip_1e-10", "clip_1e-12", "XB", "XB+"]
 
 published = pd.read_csv(ECI_DIR / "eci_scores.csv", parse_dates=["date"]).set_index("Model")
 dates = published.date
@@ -90,6 +90,9 @@ fit_dirs = [(p.name, p) for p in sorted(FIT_ROOT.iterdir()) if (p / "draws.npz")
 xb_dir = FIT_ROOT.parent / FIT_ROOT.name.replace("clip_refits", "sbeta")
 if (xb_dir / "draws.npz").exists():
     fit_dirs.append(("XB", xb_dir))
+xbp_dir = FIT_ROOT.parent / FIT_ROOT.name.replace("clip_refits", "xb_median_vm")
+if (xbp_dir / "draws.npz").exists():
+    fit_dirs.append(("XB+", xbp_dir))
 for name, fit_dir in fit_dirs:
     draws = fit_draws(fit_dir)
     sources.append((name, draws.mean(), draws))

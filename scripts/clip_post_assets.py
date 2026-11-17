@@ -6,7 +6,8 @@ Usage: python scripts/clip_post_assets.py ECI_DIR CLIP_REFITS_DIR XB_FIT OUT_DIR
   CLIP_REFITS_DIR: scripts/bayes_eci.py fits of Epoch's model at several clips: base (0.1%), clip_0.01, clip_0.0001, ...
   XB_FIT: the extended-support beta, XB (bayes_eci.py --sbeta; the fit-side names predate "XB"); the folder also holds
     loo_pointwise_c0.001.csv (scripts/loo_compare.py --save, labels epoch / xb) and fit_metrics.csv
-    (scripts/fit_metrics.py --csv, labels epoch / xb).
+    (scripts/fit_metrics.py --csv, labels epoch / xb). A sibling xb_median_vm_<stamp> (XB+: XB median-centred, with
+    variance-matched capability noise) adds an XB+ row to clip_table.csv and an xb+ column to bench_sigma.csv.
   QUESTION_COUNTS_CSV: binom/benchmark_question_counts.csv (for FrontierMath Tier 4's question count).
 Writes OUT_DIR/clip_table.csv, bench_sigma.csv, fit_metrics.csv, post_stats.json.
 """
@@ -36,10 +37,13 @@ def posterior_mean(draws, key, names):
     return pd.Series(draws[key].mean(0), index=draws[names])
 
 
-# The fits, in the tables' row order: Epoch's model at each clip (loosest first), then XB
+# The fits, in the tables' row order: Epoch's model at each clip (loosest first), then XB and XB+
 clip_dirs = [d for d in CLIP_REFITS.iterdir() if (d / "draws.npz").exists()]
 clip_of = {d: json.load(open(d / "diagnostics.json"))["clip"] for d in clip_dirs}
 fits = [("clip", clip_of[d], d) for d in sorted(clip_dirs, key=lambda d: -clip_of[d])] + [("XB", np.nan, XB_FIT)]
+XBP_FIT = XB_FIT.parent / XB_FIT.name.replace("sbeta", "xb_median_vm")
+if (XBP_FIT / "draws.npz").exists():
+    fits.append(("XB+", np.nan, XBP_FIT))
 base_eci = posterior_mean(load(CLIP_REFITS / "base"), "eci", "models")  # Epoch's 0.1% clip
 frontier = base_eci.index[base_eci >= FRONTIER_ECI]
 
@@ -53,7 +57,7 @@ for kind, clip, fit_dir in fits:
     moved = (posterior_mean(draws, "eci", "models") - base_eci)[frontier].abs()
     table.append(dict(model=kind, clip=clip, astra_minus_sol=astra_lead.mean(), p_astra_over_sol=np.mean(astra_lead > 0),
                       frontier_mean_abs_change=moved.mean(), frontier_max_abs_change=moved.max()))
-    sigma_b["xb" if kind == "XB" else f"clip_{clip:g}"] = posterior_mean(draws, "sigma", "benchmarks")
+    sigma_b[kind.lower() if kind != "clip" else f"clip_{clip:g}"] = posterior_mean(draws, "sigma", "benchmarks")
 table = pd.DataFrame(table)
 table.to_csv(OUT / "clip_table.csv", index=False)
 sigma_b = pd.DataFrame(sigma_b)

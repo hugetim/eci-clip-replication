@@ -40,9 +40,9 @@ To refit everything from scratch instead, run `bash setup.sh` without `--draws`,
 
 | Post file | Script | From |
 |---|---|---|
-| `clip_table.csv`, `bench_sigma.csv`, `fit_metrics.csv`, `post_stats.json` | `scripts/clip_post_assets.py` | Epoch's model refit at each clip (`results/clip_refits_*`); XB (`results/sbeta_*`) with its `loo_compare.py` and `fit_metrics.py` outputs |
+| `clip_table.csv`, `bench_sigma.csv`, `fit_metrics.csv`, `post_stats.json` | `scripts/clip_post_assets.py` | Epoch's model refit at each clip (`results/clip_refits_*`); XB (`results/sbeta_*`) with its `loo_compare.py` and `fit_metrics.py` outputs; XB+ rows from `results/xb_median_vm_*` |
 | `fable_gap.csv`, `fable_gap_lines.csv` | `scripts/clip_trend_gap.py` | the same fits, plus Epoch's published ECI and its 500 bootstrap draws |
-| `xb_vm.json` | `scripts/xb_median_vm_post_assets.py` | XB, median-centred, with variance-matched capability noise (`results/xb_median_vm_*`; the last footnote), with its `loo_compare.py` and `fit_metrics.py` outputs |
+| `xb_vm.json` | `scripts/xb_median_vm_post_assets.py` | XB+: XB, median-centred, with variance-matched capability noise (`results/xb_median_vm_*`), with its `loo_compare.py` and `fit_metrics.py` outputs |
 | `xbx.json` | `scripts/xbx_post_assets.py` | XBX (`results/xbx_*`) and its `loo_compare.py` output |
 | (the XB footnote's prior sensitivity: not a post file) | `scripts/xb_sensitivity.py` | XB refit under three other priors on δ (`results/xb_prior_*`); writes `results/xb_prior_*/prior_sensitivity.csv` |
 | `ls_clip_table.csv` | `scripts/ls_clip_sweep.py` | Epoch's original least-squares ECI (benchmark-stitching `fit.py`) at each clip |
