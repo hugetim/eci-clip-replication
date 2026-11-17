@@ -85,13 +85,13 @@ def init_from_fit(fit_dir, model):
     lsl = np.log(dr["slope"].astype(float) * b).mean(0)[bi]
     init = {"capability": cap, "difficulty": dif - dif.mean(), "log_slope": lsl - lsl.mean(),
             "sigma": dr["sigma"].astype(float).mean(0)[bi]}
-    for k in ("tau_alpha", "sigma_median", "tau_sigma", "gamma", "delta", "nu"):
+    for k in ("tau_alpha", "sigma_median", "tau_sigma", "gamma", "delta", "nu", "tau_cap"):
         if "hyper_" + k in dr.files and k in model.named_vars:
             init[k] = float(np.median(dr["hyper_" + k]))
     return init
 
 
-def sbeta_model(df, shift=False, delta_prior="halfnormal0.05", xbx_nodes=0):
+def sbeta_model(df, shift=False, delta_prior="halfnormal0.05", xbx_nodes=0, median_centre=False, var_match=False):
     """Epoch's model with the extended-support beta likelihood, XB(mu, phi, u), of Kosmidis and Zeileis (2026, JRSS C
     75: 139-157), with phi = kappa and u = delta. (This code calls it "sbeta", for stretched beta: the name predates
     the post's "XB".)
@@ -122,6 +122,11 @@ def sbeta_model(df, shift=False, delta_prior="halfnormal0.05", xbx_nodes=0):
     Against a 600-point reference at the XB fit's estimates, nu = 0.0013 to 0.011, the total log-likelihood error is
     under 0.015 with 12 Laguerre nodes. u is capped at 0.1, which only matters for nodes whose weight is negligible
     at any nu the data support.
+
+    median_centre=True, var_match=True: the improvement on XB in the post's last footnote (see median_vm.py). The
+    curve sets the latent beta's median rather than its mean, and capability noise with sd tau (prior HalfNormal(1),
+    raw capability scale) enters through the beta's variance: kappa + 1 = 1 / (4 sigma_b^2 + (slope_b tau)^2
+    mu (1 - mu)). One extra parameter, tau.
     """
     import pymc as pm
     import pytensor.tensor as pt
@@ -159,7 +164,13 @@ def sbeta_model(df, shift=False, delta_prior="halfnormal0.05", xbx_nodes=0):
             raise ValueError(delta_prior)
         mu = pt.clip(pm.math.sigmoid(slope[bench_idx] * (capability[model_idx] - difficulty[bench_idx])), 1e-6, 1 - 1e-6)
         kappa = 1 / (4 * sigma[bench_idx] ** 2) - 1
+        if var_match:  # capability noise, by variance matching (median_vm.kappa_formula)
+            from median_vm import kappa_formula
+            kappa = kappa_formula(sigma[bench_idx], slope[bench_idx], pm.HalfNormal("tau_cap", 1.0), mu, xp=pt)
         a, b = mu * kappa, (1 - mu) * kappa
+        if median_centre:  # the curve sets the beta's median (median_vm.herm_a)
+            from median_vm import herm_a
+            a = herm_a(mu, kappa, xp=pt); b = kappa - a
         lo, hi = cat == 0, cat == 2
         if xbx_nodes:  # XBX: mixture over u = nu Q_t, log-sum-exp over the quadrature nodes
             assert not shift
@@ -220,8 +231,14 @@ def main():
     ap.add_argument("--xbx", type=int, default=0, metavar="NODES",
                     help="Kosmidis-Zeileis XBX (exponential mixture of XB over the exceedance), with this many "
                          "Gauss-Laguerre nodes (see sbeta_model)")
+    ap.add_argument("--median-centre", action="store_true",
+                    help="with --sbeta: the curve sets the latent beta's median (see sbeta_model, median_vm.py)")
+    ap.add_argument("--var-match", action="store_true",
+                    help="with --sbeta: capability noise with sd tau, through the beta's variance (see sbeta_model)")
     ap.add_argument("--init-from", metavar="FIT_DIR",
                     help="start chains at this fit's posterior means (its draws.npz; ECI scale converted to raw)")
+    ap.add_argument("--init-set", action="append", default=[], metavar="NAME=VALUE",
+                    help="with --init-from: also start this scalar parameter at VALUE (repeatable)")
     args = ap.parse_args()
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -233,8 +250,11 @@ def main():
         model = sbeta_model(df, delta_prior=args.delta_prior, xbx_nodes=args.xbx)
         DIAG_VARS.append("nu"); HYPER.append("nu")
     elif args.sbeta or args.sbeta_shift:
-        model = sbeta_model(df, shift=args.sbeta_shift, delta_prior=args.delta_prior)
+        model = sbeta_model(df, shift=args.sbeta_shift, delta_prior=args.delta_prior, median_centre=args.median_centre,
+                            var_match=args.var_match)
         DIAG_VARS.append("delta"); HYPER.append("delta")
+        if args.var_match:
+            DIAG_VARS.append("tau_cap"); HYPER.append("tau_cap")
         if args.sbeta_shift:
             DIAG_VARS.append("gamma"); HYPER.append("gamma")
     else:
@@ -251,6 +271,7 @@ def main():
     init = None
     if args.init_from:  # start every chain at another fit's posterior means (raw scale), jittering only new parameters
         init = init_from_fit(args.init_from, model)
+        init.update({k: float(v) for k, v in (kv.split("=", 1) for kv in args.init_set)})
         jitter = {model[v] for v in HYPER if v not in init}
     t0 = time.time()
     compiled = nutpie.compile_pymc_model(model, jitter_rvs=jitter, initial_points=init)
@@ -272,6 +293,7 @@ def main():
                 n_scores=len(df), n_models=len(models), n_benchmarks=len(benches),
                 processed_sha256=hashlib.sha256(src.read_bytes()).hexdigest(),
                 clip=args.clip, sbeta=args.sbeta or args.sbeta_shift, sbeta_shift=args.sbeta_shift, delta_prior=args.delta_prior, xbx_nodes=args.xbx,
+                median_centre=args.median_centre, var_match=args.var_match,
                 eci_public_commit=ECI_PUBLIC_COMMIT, fitted_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
     diag["passes_epoch_checks"] = bool(div == 0 and diag["min_ess_bulk"] >= MIN_ESS
                                        and diag["max_rhat"] <= MAX_RHAT)

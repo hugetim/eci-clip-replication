@@ -23,6 +23,7 @@ import pandas as pd
 from scipy.special import betaln, expit
 from scipy.stats import beta as beta_dist, kstest
 from arviz_stats.base.array import array_stats
+from median_vm import beta_params
 
 ap = argparse.ArgumentParser()
 ap.add_argument("data_dir")
@@ -75,8 +76,7 @@ def predictive(fit):
     eci, edi, slope, sigma = (dr[k][keep].astype(float) for k in ("eci", "edi", "slope", "sigma"))
     # Epoch's beta for each score: mean mu on the benchmark's logistic curve, precision kappa from its sigma_b
     mu = np.clip(expit(slope[:, bench_idx] * (eci[:, model_idx] - edi[:, bench_idx])), 1e-6, 1 - 1e-6)
-    kappa = 1 / (4 * sigma[:, bench_idx] ** 2) - 1
-    a, b = mu * kappa, (1 - mu) * kappa
+    a, b = beta_params(dr, diag, keep, bench_idx, sigma[:, bench_idx], slope, mu)  # median-centred / variance-matched: median_vm.py
     x = rng.beta(a, b)
     if diag.get("sbeta"):  # XB: the beta stretched to [-delta, 1 + delta], then clamped to [0, 1]
         delta = dr["hyper_delta"][keep].astype(float)[:, None]

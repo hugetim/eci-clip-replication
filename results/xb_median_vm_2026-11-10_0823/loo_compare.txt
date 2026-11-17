@@ -1,0 +1,15 @@
+/home/thuegerich/miniconda3/envs/eci-fit/lib/python3.12/site-packages/arviz_stats/loo/loo_helper.py:1169: UserWarning: Estimated shape parameter of Pareto distribution is greater than 0.70 for one or more samples. You should consider using a more robust model, this is because importance sampling is less likely to work well if the marginal posterior and LOO posterior are very different. This is more likely to happen with a non-robust model and highly influential observations.
+  warnings.warn(
+/home/thuegerich/miniconda3/envs/eci-fit/lib/python3.12/site-packages/arviz_stats/loo/loo_helper.py:1169: UserWarning: Estimated shape parameter of Pareto distribution is greater than 0.67 for one or more samples. You should consider using a more robust model, this is because importance sampling is less likely to work well if the marginal posterior and LOO posterior are very different. This is more likely to happen with a non-robust model and highly influential observations.
+  warnings.warn(
+/home/thuegerich/miniconda3/envs/eci-fit/lib/python3.12/site-packages/arviz_stats/loo/loo_helper.py:1169: UserWarning: Estimated shape parameter of Pareto distribution is greater than 0.70 for one or more samples. You should consider using a more robust model, this is because importance sampling is less likely to work well if the marginal posterior and LOO posterior are very different. This is more likely to happen with a non-robust model and highly influential observations.
+  warnings.warn(
+evaluation threshold c* = 0.001: 59 bottom, 20 top, 2708 interior
+110 points have Pareto k > 0.7 in at least one fit (3 at the boundary); 'reliable' columns drop them for every fit
+
+elpd_loo and differences from epoch:
+         elpd  boundary  interior  diff  diff_se  diff_boundary  diff_interior  diff_reliable  diff_reliable_se
+fit                                                                                                            
+epoch  2909.2    -163.5    3072.7   0.0      0.0            0.0            0.0            0.0               0.0
+xb     2943.9     -89.9    3033.9  34.7     12.1           73.6          -38.9           28.2              10.8
+vm     2965.2    -103.3    3068.6  56.0     14.1           60.2           -4.2           38.5              11.8

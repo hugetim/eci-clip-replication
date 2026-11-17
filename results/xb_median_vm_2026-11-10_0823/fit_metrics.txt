@@ -1,0 +1,22 @@
+epoch: Pareto k > 0.7 for 56 scores
+xb: Pareto k > 0.7 for 52 scores
+vm: Pareto k > 0.7 for 44 scores
+
+observed share < 0.1%: 0.0212; 2787 scores; 1000 posterior draws per fit
+
+                                 epoch                 xb                 vm         
+                             in sample PSIS-LOO in sample PSIS-LOO in sample PSIS-LOO
+RMSE                            0.0800   0.0925    0.0798   0.0928    0.0799   0.0929
+MAE                             0.0589   0.0681    0.0585   0.0679    0.0583   0.0676
+median abs error                0.0439   0.0503    0.0436   0.0501    0.0433   0.0501
+beta-scaled RMSE                0.0946   0.1094    0.0966   0.1136    0.0941   0.1103
+mean bias                      -0.0012  -0.0013   -0.0011  -0.0011   -0.0008  -0.0010
+coverage 50%                    0.5669   0.5091    0.5745   0.5170    0.5870   0.5228
+coverage 90%                    0.9401   0.8959    0.9415   0.8945    0.9458   0.9046
+coverage 90%, scores <= 0.05    0.8750   0.8100    0.9200   0.8550    0.9350   0.8650
+coverage 90%, scores >= 0.95    0.9360   0.9200    0.9360   0.9280    0.9440   0.9280
+coverage 99%                    0.9946   0.9824    0.9961   0.9856    0.9953   0.9860
+CRPS                            0.0412   0.0479    0.0411   0.0480    0.0412   0.0480
+PIT KS                          0.0380   0.0252    0.0408   0.0248    0.0443   0.0277
+predicted share < 0.1%          0.0136   0.0144    0.0246   0.0254    0.0207   0.0213
+PPP variance                    0.5670      NaN    0.8270      NaN    0.9810      NaN

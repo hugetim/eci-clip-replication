@@ -19,6 +19,7 @@ SAVE = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--save=")), N
 sys.argv = [a for a in sys.argv if not a.startswith("--save=")]
 from scipy.special import betaln, expit
 from scipy.stats import beta as B
+from median_vm import beta_params
 
 d = pd.read_csv(f"{sys.argv[1]}/processed_data_for_eci.csv")
 c_eval = float(sys.argv[2])
@@ -34,7 +35,8 @@ def pointwise(fit):
     idx = np.concatenate([np.arange(c * per, (c + 1) * per, 4) for c in range(4)])
     eci, edi, sl, sg = (dr[k][idx].astype(float) for k in ("eci", "edi", "slope", "sigma"))
     eta = sl[:, bi] * (eci[:, mi] - edi[:, bi]); sig = sg[:, bi]
-    mu = np.clip(expit(eta), 1e-6, 1 - 1e-6); k = 1 / (4 * sig ** 2) - 1; a, b = mu * k, (1 - mu) * k
+    mu = np.clip(expit(eta), 1e-6, 1 - 1e-6)
+    a, b = beta_params(dr, diag, idx, bi, sig, sl, mu)  # Epoch's beta, or median-centred / variance-matched (median_vm.py)
     yi = np.clip(y, c_eval, 1 - c_eval)
     dens = (a - 1) * np.log(yi) + (b - 1) * np.log1p(-yi) - betaln(a, b)
     lcdf, lsf = B.logcdf(c_eval, a, b), B.logsf(1 - c_eval, a, b)

@@ -20,9 +20,9 @@ if [ ! -d "$D" ]; then
 fi
 echo "data in $D"
 if [ "$1" = "--draws" ]; then
-  # Posterior draws of every fit (133 MB), from this repo's GitHub release
+  # Posterior draws of every fit (about 150 MB), from this repo's GitHub release
   curl -sSfL -o release/draws_2026-11-10_0823.tar \
-    https://github.com/hugetim/eci-clip-replication/releases/download/v1/draws_2026-11-10_0823.tar
+    https://github.com/hugetim/eci-clip-replication/releases/download/v2/draws_2026-11-10_0823.tar
   tar -xf release/draws_2026-11-10_0823.tar
   echo "draws unpacked into results/"
 fi
