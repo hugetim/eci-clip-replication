@@ -31,6 +31,7 @@ out = dict(
     loo_diff_epoch=float(gain_epoch.sum()), loo_se_epoch=se(gain_epoch),
     **{f"bsrmse_{f}": float(metrics.loc["beta-scaled RMSE", f"{f}|PSIS-LOO"]) for f in FITS},
     fable_eci=float(pd.read_csv(f"{FIT}/eci.csv").set_index("Model").eci["Claude Fable 5.2"]),
+    loo_measures={m: float(v) for m, v in metrics["vm|PSIS-LOO"].dropna().items()},  # the post's table of other measures
 )
 json.dump(out, open("posts/eci-clip/xb_vm.json", "w"), indent=1)
 print(json.dumps(out, indent=1))
