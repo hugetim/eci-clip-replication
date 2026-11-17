@@ -93,7 +93,8 @@ html = HEAD.format(title="Compare what each model's ECI rests on", note=note) + 
 <script>
 const DATA=__D__,B=__B__,PAIR=__PAIR__,LABELS=__LABELS__;
 let X0=100,X1=200;/* ECI axis range, set in render() to what the two models need */
-const COL=['#D85A30','#5B57D1'],GREEN='#1D9E75',DARKG='#085041';
+/* first model blue, second red (Nov 17, 2026: matches the post's charts) */
+const COL=['#5B57D1','#D85A30'],GREEN='#1D9E75',DARKG='#085041';
 const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim()||'#52514e';
 const pct=x=>(Math.round(x*1000)/10)+'%';
 const adj=b=>b.rb>0||b.c<1;
